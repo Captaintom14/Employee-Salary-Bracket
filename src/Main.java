@@ -1,9 +1,11 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.SQLOutput;
 import java.util.*;
 
 public class Main {
+
     public static void main(String[] args) throws IOException {
 
         StringBuilder sb = new StringBuilder();
@@ -31,93 +33,125 @@ public class Main {
 
         ArrayList <Employee> employees = new ArrayList<>(numbers);
 
-        Info(content,numbers,employees);
+        Info(content,numbers, employees);
 
-        program(employees, minSalary, maxSalary);
+        program(employees, minSalary, maxSalary, numbers);
+
     }
 
 
-    public static void program(ArrayList<Employee> employees, int minSalary, int maxSalary){
+ public static void program(ArrayList <Employee> employees, int minSalary, int maxSalary, int numbers){
 
             Scanner sc = new Scanner(System.in);
             System.out.println("Please insert a value to calculate the required number of salary brackets");
 
             int k = sc.nextInt();
 
-            int[] bracket = salaryBracket(k, minSalary, maxSalary);
 
-        boolean repeat = true;
-        while (repeat) {
+                TreeMap<Integer, ArrayList<Employee>> brackets = new TreeMap<>();
 
-            System.out.println("Would you like to add a new employee?");
-            System.out.println("Press 1 to add");
-            System.out.println("Press 2 to not add");
-
-            int userChoice = sc.nextInt();
-
-            if (userChoice == 1) {
-                System.out.println("Please insert a new ID");
-
-                int newID = sc.nextInt();
-                int newSalary = 0;
-
-                boolean sameID = employeeInfo(employees, newID);
-
-                if (!sameID) {
-                    System.out.println("The new employee will be added to the list");
-
-                    boolean salaryRepeat = true;
-
-                    while (salaryRepeat){
-                        System.out.println("Please insert their salary");
-                        newSalary = sc.nextInt();
-                        boolean salaryHLCheck = employeeSalary(newSalary, minSalary, maxSalary);
-
-                        if (salaryHLCheck){
-                            System.out.println("The new salary is either too high or too low. Please try again");
-                            salaryRepeat = true;
-                        } else {
-                            System.out.println("The new salary is added");
-                            salaryRepeat = false;
-                        }
-                    }
-
-                  //  employees.add(new Employee(newID,newSalary));
-
-                    TreeMap<Integer, ArrayList<Employee>> brackets = new TreeMap<>();
-
-                    for (int i = 0; i < k; i++) {
-
-                    }
-
-
-                } else {
-                    System.out.println("The Employee exists. Please try again.");
-                    repeat = true;
+                for (int i = 0; i < k; i++) {
+                    brackets.put(i, new ArrayList<>());
                 }
 
-            } else if (userChoice == 2) {
-                break;
-            }
-        }
+                int rangeBracket = range(maxSalary, minSalary, k);
+                int rangeSalary = 0;
+
+                boolean repeat = true;
+                boolean update = true;
+                while (repeat) {
+
+                    System.out.println("Would you like to add a new employee?");
+                    System.out.println("Press 1 to add");
+                    System.out.println("Press 2 to not add");
+
+                    int userChoice = sc.nextInt();
+
+                    if (userChoice == 1) {
+
+                        System.out.println("Please insert a new ID");
+
+                        int newID = sc.nextInt();
+                        int newSalary = 0;
+
+                        boolean sameID = employeeInfo(employees, newID);
+
+                        if (!sameID) {
+                            System.out.println("The new employee will be added to the list");
+
+                            boolean salaryRepeat = true;
+
+                            while (salaryRepeat) {
+                                System.out.println("Please insert their salary");
+                                newSalary = sc.nextInt();
+                                boolean salaryHLCheck = employeeSalary(newSalary, minSalary, maxSalary);
+
+                                if (salaryHLCheck) {
+                                    System.out.println("The new salary is either too high or too low. Please try again");
+                                    salaryRepeat = true;
+                                    update = false;
+                                } else {
+                                    System.out.println("The new salary is added");
+                                    salaryRepeat = false;
+                                    update = true;
+                                }
+                            }
+
+                        } else {
+                            System.out.println("The Employee exists. Please try again.");
+                            repeat = true;
+                        }
+
+                        employees.add(new Employee(newID, newSalary));
+                    } else if (userChoice == 2) {
+                        break;
+                    }
+                }
+
+     for (Employee e : employees) {
+         rangeSalary = salaryBracket(rangeBracket, minSalary, e.getSalary());
+
+         if (brackets.containsKey(rangeSalary)) {
+             brackets.get(rangeSalary).add(e);
+         } else {
+             ArrayList<Employee> newEmployee = new ArrayList<>();
+             newEmployee.add(e);
+             brackets.put(rangeSalary, newEmployee);
+         }
+     }
+
+     System.out.println("******************************");
+     System.out.println("Employee List");
+     for (Map.Entry<Integer, ArrayList<Employee>> entry : brackets.entrySet()) {
+         int startBracket = minSalary + (entry.getKey() * rangeBracket);
+         int endBracket = Math.min(startBracket + rangeBracket, maxSalary);
+
+         if (entry.getKey() >= 0 && entry.getKey() != k) {
+             System.out.println("----------------------------------------------------------------------------------------------------------------");
+             System.out.println("Bracket #" + (entry.getKey() + 1) + " Starting Point:" + startBracket + "$" + " Ending Point:" + endBracket + "$");
+             for (Employee e : entry.getValue()) {
+                 System.out.println("Employee ID: " + e.getId() + ", Salary: " + e.getSalary());
+             }
+         }
+     }
 
     }
 
-
-    public static int[] salaryBracket(int k, int minSalary, int maxSalary){
-        int bracket [] = new int[k];
-
-        int percentageRange = (maxSalary - minSalary) / k;
-
-        for (int i = 0; i < k; i++) {
-            bracket[i] = minSalary + percentageRange * (i+1);
-        }
-        return bracket;
+    public static int range(int maxSalary, int minSalary,  int k){
+       int range = (maxSalary - minSalary) / k;
+        return range;
     }
 
-    public static boolean employeeInfo(List<Employee> employees, int newID){
+    public static int salaryBracket(int rangeBracket, int minSalary, int salary){
+        int range = (salary - minSalary) / rangeBracket;
+        return range;
+    }
+
+    public static boolean employeeInfo(ArrayList <Employee> employees, int newID){
+
 
         for (Employee e : employees){
+
             if (e.getId() == newID){
                 return true;
             }
@@ -176,11 +210,6 @@ class Employee {
     public void setSalary(int salary) {
         this.salary = salary;
     }
-
-    public void display(){
-        System.out.println(id+" "+salary);
-    }
-
 
 }
 
